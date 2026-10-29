@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EURO 2028 Voetbalpoule</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-800 flex flex-col font-sans">
+
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-blue-900 via-indigo-900 to-blue-800 text-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <span class="text-3xl">⚽</span>
+                <div>
+                    <h1 class="text-xl md:text-2xl font-black tracking-wider uppercase text-amber-400">EURO 2028</h1>
+                    <p class="text-xs text-blue-200">Official Prediction League</p>
+                </div>
+            </div>
+
+            <!-- User Auth Bar -->
+            <div id="auth-bar" class="flex items-center space-x-3">
+                <!-- User status JS target -->
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full">
+
+        <!-- Banner Countdown -->
+        <div class="bg-gradient-to-r from-amber-500 to-amber-600 rounded-2xl p-4 text-white shadow-md mb-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center space-x-3">
+                <i class="fa-solid fa-trophy text-3xl text-amber-200"></i>
+                <div>
+                    <h2 class="font-bold text-lg">EK 2028 VK & Ierland</h2>
+                    <p class="text-xs text-amber-100">Openingswedstrijd: 9 Juni 2028 • Wembley Stadium</p>
+                </div>
+            </div>
+            <div class="bg-amber-900/40 px-4 py-2 rounded-xl backdrop-blur-sm text-center">
+                <span id="countdown" class="font-mono text-lg font-bold">Aftellen...</span>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <nav class="flex space-x-2 border-b border-slate-300 mb-6 overflow-x-auto pb-2 scrollbar-none">
+            <button onclick="switchTab('ranglijst')" id="tab-ranglijst" class="tab-btn px-5 py-2.5 rounded-t-xl font-bold text-sm flex items-center gap-2 bg-blue-600 text-white shadow-md">
+                <i class="fa-solid fa-ranking-star"></i> Live Ranglijst
+            </button>
+            <button onclick="switchTab('voorspellen')" id="tab-voorspellen" class="tab-btn px-5 py-2.5 rounded-t-xl font-bold text-sm flex items-center gap-2 text-slate-600 hover:bg-slate-200">
+                <i class="fa-solid fa-pen-to-square"></i> Mijn Voorspellingen
+            </button>
+            <button onclick="switchTab('uitslagen')" id="tab-uitslagen" class="tab-btn px-5 py-2.5 rounded-t-xl font-bold text-sm flex items-center gap-2 text-slate-600 hover:bg-slate-200">
+                <i class="fa-solid fa-futbol"></i> Uitslagen & Schema
+            </button>
+            <button onclick="switchTab('teams')" id="tab-teams" class="tab-btn px-5 py-2.5 rounded-t-xl font-bold text-sm flex items-center gap-2 text-slate-600 hover:bg-slate-200">
+                <i class="fa-solid fa-users"></i> Teams & Poules
+            </button>
+        </nav>
+
+        <!-- TAB 1: LIVE RANGLIJST -->
+        <section id="content-ranglijst" class="tab-content space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Leaderboard Table -->
+                <div class="md:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="bg-slate-800 text-white px-6 py-4 flex justify-between items-center">
+                        <h3 class="font-bold flex items-center gap-2"><i class="fa-solid fa-medal text-amber-400"></i> Stand van de Poule</h3>
+                        <span class="text-xs bg-slate-700 px-2.5 py-1 rounded-full text-slate-300">3pt winst • +2pt exacte score</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50 text-slate-500 text-xs uppercase border-b border-slate-200">
+                                    <th class="py-3 px-4">#</th>
+                                    <th class="py-3 px-4">Deelnemer</th>
+                                    <th class="py-3 px-4 text-center">Exact</th>
+                                    <th class="py-3 px-4 text-center">Juist</th>
+                                    <th class="py-3 px-4 text-right">Punten</th>
+                                </tr>
+                            </thead>
+                            <tbody id="leaderboard-table" class="divide-y divide-slate-100 text-sm">
+                                <tr>
+                                    <td colspan="5" class="text-center py-8 text-slate-400">Laden van ranglijst...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Invite Box -->
+                <div class="bg-gradient-to-br from-indigo-900 to-slate-900 text-white rounded-2xl p-6 shadow-md flex flex-col justify-between">
+                    <div>
+                        <div class="w-12 h-12 bg-indigo-500/20 text-indigo-400 rounded-xl flex items-center justify-center text-2xl mb-4">
+                            <i class="fa-solid fa-user-plus"></i>
+                        </div>
+                        <h3 class="text-xl font-bold mb-2">Nodig je vrienden uit!</h3>
+                        <p class="text-slate-300 text-sm mb-6">Deel de link via WhatsApp. Iedereen kan zijn eigen voorspellingen invullen en de stand updates live!</p>
+                    </div>
+                    <button onclick="shareViaWhatsApp()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-4 rounded-xl shadow-lg flex items-center justify-center gap-2 transition">
+                        <i class="fa-brands fa-whatsapp text-xl"></i> Deel op WhatsApp
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: MIJN VOORSPELLINGEN -->
+        <section id="content-voorspellen" class="tab-content hidden space-y-6">
+            <div id="login-warning" class="bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center">
+                <i class="fa-solid fa-lock text-3xl text-amber-500 mb-2"></i>
+                <h3 class="font-bold text-lg text-amber-900">Inloggen Vereist</h3>
+                <p class="text-sm text-amber-700 mb-4">Log in of maak een account aan om je voorspellingen vast te leggen.</p>
+                <button onclick="openAuthModal()" class="bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-6 rounded-xl transition">Inloggen / Registreren</button>
+            </div>
+
+            <div id="predictions-container" class="space-y-4 hidden">
+                <div class="flex justify-between items-center bg-white p-4 rounded-2xl border border-slate-200">
+                    <div>
+                        <h3 class="font-bold text-lg">Jouw Voorspellingen</h3>
+                        <p class="text-xs text-slate-500">Vul de verwachte uitslagen in. Klik op opslaan om te bevestigen.</p>
+                    </div>
+                    <button onclick="saveMyPredictions()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-5 rounded-xl shadow transition flex items-center gap-2">
+                        <i class="fa-solid fa-floppy-disk"></i> Opslaan
+                    </button>
+                </div>
+
+                <div id="matches-prediction-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Dynamic Matches -->
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: UITSLAGEN (ADMIN / OVERZICHT) -->
+        <section id="content-uitslagen" class="tab-content hidden space-y-6">
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h3 class="font-bold text-lg">Echte Wedstrijduitslagen</h3>
+                        <p class="text-xs text-slate-500">De Admin kan hier de officiële uitslagen invoeren om punten te berekenen.</p>
+                    </div>
+                </div>
+                <div id="actual-results-list" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Dynamic Matches for Admin -->
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: TEAMS & POULES -->
+        <section id="content-teams" class="tab-content hidden space-y-6">
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <h3 class="font-bold text-lg">Deelnemende Landen</h3>
+                        <p class="text-xs text-slate-500">Beheer de 24 landen die meedoen aan het EK 2028.</p>
+                    </div>
+                    <button onclick="loadDefaultTeams()" class="bg-slate-800 hover:bg-slate-900 text-white font-bold py-2 px-4 rounded-xl text-sm transition">
+                        <i class="fa-solid fa-rotate-left"></i> Laad EK 2028 Voorbeeld Teams
+                    </button>
+                </div>
+
+                <div id="groups-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                    <!-- Poules A t/m F -->
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Auth Modal -->
+    <div id="auth-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 class="font-bold text-lg" id="modal-title">Inloggen</h3>
+                <button onclick="closeAuthModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            
+            <form id="auth-form" onsubmit="handleAuth(event)" class="space-y-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">E-mailadres</label>
+                    <input type="email" id="auth-email" required class="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Wachtwoord</label>
+                    <input type="password" id="auth-password" required class="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                <div id="name-field" class="hidden">
+                    <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Je Naam / Nickname</label>
+                    <input type="text" id="auth-name" class="w-full border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                
+                <button type="submit" id="auth-submit-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-lg transition">Inloggen</button>
+            </form>
+
+            <div class="text-center pt-2">
+                <button onclick="toggleAuthMode()" id="auth-toggle-btn" class="text-xs text-blue-600 font-semibold hover:underline">Nog geen account? Registreer hier</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Script -->
+    <script>
+        // --- 1. FIREBASE CONFIGURATION ---
+        // Vervang de onderstaande objecten indien gewenst met jouw eigen Firebase Config uit de console
+        const firebaseConfig = {
+            apiKey: "AIzaSyDemoConfigForEuro2028AppOnly",
+            authDomain: "euro2028-poule.firebaseapp.com",
+            projectId: "euro2028-poule",
+            storageBucket: "euro2028-poule.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "1:123456789:web:demo123456"
+        };
+
+        // Initialize Firebase
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // --- 2. LOCAL DATA STATE ---
+        let currentUser = null;
+        let isRegistering = false;
+
+        const defaultMatches = [
+            { id: 'm1', group: 'A', home: '🏴󠁧󠁢󠁥󠁮󠁧󠁿 Engeland', away: '🇳🇱 Nederland', date: '9 Juni 2028 - 21:00' },
+            { id: 'm2', group: 'A', home: '🇮🇪 Ierland', away: '🏴󠁧󠁢󠁳󠁣󠁴󠁿 Schotland', date: '10 Juni 2028 - 15:00' },
+            { id: 'm3', group: 'B', home: '🇪🇸 Spanje', away: '🇫🇷 Frankrijk', date: '10 Juni 2028 - 18:00' },
+            { id: 'm4', group: 'B', home: '🇩🇪 Duitsland', away: '🇮🇹 Italië', date: '10 Juni 2028 - 21:00' },
+            { id: 'm5', group: 'C', home: '🇧🇪 België', away: '🇵🇹 Portugal', date: '11 Juni 2028 - 18:00' }
+        ];
+
+        let actualResults = {};
+        let userPredictions = {};
+
+        // --- 3. INIT & AUTH LOGIC ---
+        auth.onAuthStateChanged(user => {
+            currentUser = user;
+            updateAuthUI();
+            if (user) {
+                loadUserPredictions();
+            }
+            loadLeaderboard();
+        });
+
+        function updateAuthUI() {
+            const authBar = document.getElementById('auth-bar');
+            const loginWarning = document.getElementById('login-warning');
+            const predictionsContainer = document.getElementById('predictions-container');
+
+            if (currentUser) {
+                authBar.innerHTML = `
+                    <span class="text-xs bg-blue-900/60 px-3 py-1.5 rounded-full border border-blue-400/30">👤 ${currentUser.displayName || currentUser.email}</span>
+                    <button onclick="logout()" class="text-xs bg-red-500/20 hover:bg-red-500/40 text-red-200 px-3 py-1.5 rounded-lg transition">Uitloggen</button>
+                `;
+                loginWarning.classList.add('hidden');
+                predictionsContainer.classList.remove('hidden');
+            } else {
+                authBar.innerHTML = `
+                    <button onclick="openAuthModal()" class="text-xs bg-amber-400 hover:bg-amber-300 text-slate-900 font-bold px-4 py-2 rounded-xl transition shadow">Inloggen</button>
+                `;
+                loginWarning.classList.remove('hidden');
+                predictionsContainer.classList.add('hidden');
+            }
+        }
+
+        function openAuthModal() { document.getElementById('auth-modal').classList.remove('hidden'); }
+        function closeAuthModal() { document.getElementById('auth-modal').classList.add('hidden'); }
+
+        function toggleAuthMode() {
+            isRegistering = !isRegistering;
+            document.getElementById('modal-title').innerText = isRegistering ? 'Account Aanmaken' : 'Inloggen';
+            document.getElementById('name-field').classList.toggle('hidden', !isRegistering);
+            document.getElementById('auth-submit-btn').innerText = isRegistering ? 'Registreer' : 'Inloggen';
+            document.getElementById('auth-toggle-btn').innerText = isRegistering ? 'Al een account? Log hier in' : 'Nog geen account? Registreer hier';
+        }
+
+        async function handleAuth(e) {
+            e.preventDefault();
+            const email = document.getElementById('auth-email').value;
+            const password = document.getElementById('auth-password').value;
+            const name = document.getElementById('auth-name').value;
+
+            try {
+                if (isRegistering) {
+                    const res = await auth.createUserWithEmailAndPassword(email, password);
+                    await res.user.updateProfile({ displayName: name || email.split('@')[0] });
+                } else {
+                    await auth.signInWithEmailAndPassword(email, password);
+                }
+                closeAuthModal();
+            } catch (err) {
+                alert("Fout bij inloggen/registreren: " + err.message);
+            }
+        }
+
+        function logout() { auth.signOut(); }
+
+        // --- 4. TABS & UI ---
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(el => {
+                el.classList.remove('bg-blue-600', 'text-white', 'shadow-md');
+                el.classList.add('text-slate-600');
+            });
+
+            document.getElementById(`content-${tabId}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab-${tabId}`);
+            activeBtn.classList.add('bg-blue-600', 'text-white', 'shadow-md');
+            activeBtn.classList.remove('text-slate-600');
+        }
+
+        // --- 5. RENDER MATCHES & PREDICTIONS ---
+        function renderMatches() {
+            const predList = document.getElementById('matches-prediction-list');
+            const actualList = document.getElementById('actual-results-list');
+
+            predList.innerHTML = '';
+            actualList.innerHTML = '';
+
+            defaultMatches.forEach(m => {
+                const userPred = userPredictions[m.id] || { home: '', away: '' };
+                const actual = actualResults[m.id] || { home: '', away: '' };
+
+                // Prediction item
+                predList.innerHTML += `
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                        <div class="text-xs text-slate-400 font-bold mb-2">Poule ${m.group} • ${m.date}</div>
+                        <div class="flex items-center justify-between gap-2 mb-2">
+                            <span class="font-semibold text-sm w-1/3">${m.home}</span>
+                            <div class="flex items-center gap-1">
+                                <input type="number" id="pred-home-${m.id}" value="${userPred.home}" min="0" max="15" class="w-12 h-10 text-center border rounded-lg font-bold">
+                                <span class="text-slate-400">-</span>
+                                <input type="number" id="pred-away-${m.id}" value="${userPred.away}" min="0" max="15" class="w-12 h-10 text-center border rounded-lg font-bold">
+                            </div>
+                            <span class="font-semibold text-sm w-1/3 text-right">${m.away}</span>
+                        </div>
+                    </div>
+                `;
+
+                // Admin/Actual item
+                actualList.innerHTML += `
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col justify-between">
+                        <div class="text-xs text-slate-400 font-bold mb-2">Poule ${m.group} • ${m.date}</div>
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="font-semibold text-sm w-1/3">${m.home}</span>
+                            <div class="flex items-center gap-1">
+                                <input type="number" id="actual-home-${m.id}" value="${actual.home}" onchange="saveActualResult('${m.id}')" min="0" max="15" class="w-12 h-10 text-center border rounded-lg font-bold bg-white">
+                                <span class="text-slate-400">-</span>
+                                <input type="number" id="actual-away-${m.id}" value="${actual.away}" onchange="saveActualResult('${m.id}')" min="0" max="15" class="w-12 h-10 text-center border rounded-lg font-bold bg-white">
+                            </div>
+                            <span class="font-semibold text-sm w-1/3 text-right">${m.away}</span>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // --- 6. SAVE & LOAD DATA ---
+        async function saveMyPredictions() {
+            if (!currentUser) return;
+            const preds = {};
+            defaultMatches.forEach(m => {
+                const home = document.getElementById(`pred-home-${m.id}`).value;
+                const away = document.getElementById(`pred-away-${m.id}`).value;
+                if (home !== '' && away !== '') {
+                    preds[m.id] = { home: parseInt(home), away: parseInt(away) };
+                }
+            });
+
+            await db.collection('predictions').doc(currentUser.uid).set({
+                userName: currentUser.displayName || currentUser.email,
+                predictions: preds,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+
+            alert("Je voorspellingen zijn opgeslagen!");
+            loadLeaderboard();
+        }
+
+        async function loadUserPredictions() {
+            if (!currentUser) return;
+            const doc = await db.collection('predictions').doc(currentUser.uid).get();
+            if (doc.exists) {
+                userPredictions = doc.data().predictions || {};
+            }
+            renderMatches();
+        }
+
+        async function saveActualResult(matchId) {
+            const home = document.getElementById(`actual-home-${matchId}`).value;
+            const away = document.getElementById(`actual-away-${matchId}`).value;
+
+            if (home !== '' && away !== '') {
+                actualResults[matchId] = { home: parseInt(home), away: parseInt(away) };
+                await db.collection('settings').doc('actualResults').set(actualResults);
+                loadLeaderboard();
+            }
+        }
+
+        // --- 7. LEADERBOARD BEREKENING ---
+        async function loadLeaderboard() {
+            // Load actual results
+            const actualDoc = await db.collection('settings').doc('actualResults').get();
+            if (actualDoc.exists) {
+                actualResults = actualDoc.data();
+            }
+            renderMatches();
+
+            // Load all users predictions
+            const snapshot = await db.collection('predictions').get();
+            const leaderboard = [];
+
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                const preds = data.predictions || {};
+                let points = 0;
+                let exact = 0;
+                let correctOutcome = 0;
+
+                Object.keys(preds).forEach(mId => {
+                    if (actualResults[mId]) {
+                        const pHome = preds[mId].home;
+                        const pAway = preds[mId].away;
+                        const aHome = actualResults[mId].home;
+                        const aAway = actualResults[mId].away;
+
+                        const predOutcome = Math.sign(pHome - pAway);
+                        const actualOutcome = Math.sign(aHome - aAway);
+
+                        if (pHome === aHome && pAway === aAway) {
+                            points += 5; // Exact score (3 + 2 bonus)
+                            exact++;
+                            correctOutcome++;
+                        } else if (predOutcome === actualOutcome) {
+                            points += 3; // Juiste winnaar/gelijkspel
+                            correctOutcome++;
+                        }
+                    }
+                });
+
+                leaderboard.push({
+                    name: data.userName || 'Anoniem',
+                    points,
+                    exact,
+                    correctOutcome
+                });
+            });
+
+            // Sorteren op punten -> aantal exact -> aantal juist
+            leaderboard.sort((a, b) => b.points - a.points || b.exact - a.exact || b.correctOutcome - a.correctOutcome);
+
+            const table = document.getElementById('leaderboard-table');
+            if (leaderboard.length === 0) {
+                table.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-slate-400">Nog geen voorspellingen ingevuld.</td></tr>`;
+                return;
+            }
+
+            table.innerHTML = leaderboard.map((item, idx) => `
+                <tr class="${idx === 0 ? 'bg-amber-50 font-bold' : ''}">
+                    <td class="py-3 px-4">${idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : idx + 1}</td>
+                    <td class="py-3 px-4">${item.name}</td>
+                    <td class="py-3 px-4 text-center"><span class="bg-amber-100 text-amber-800 text-xs font-bold px-2 py-0.5 rounded-full">${item.exact}</span></td>
+                    <td class="py-3 px-4 text-center"><span class="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-0.5 rounded-full">${item.correctOutcome}</span></td>
+                    <td class="py-3 px-4 text-right font-black text-blue-600 text-base">${item.points}</td>
+                </tr>
+            `).join('');
+        }
+
+        // --- 8. WHATSAPP DELEN ---
+        function shareViaWhatsApp() {
+            const url = window.location.href;
+            const text = `Doe mee met de EURO 2028 Voetbalpoule! ⚽🏆 Vul je voorspellingen in via deze link: ${url}`;
+            window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+        }
+
+        // --- 9. COUNTDOWN TIMER ---
+        const targetDate = new Date('June 9, 2028 21:00:00').getTime();
+        setInterval(() => {
+            const now = new Date().getTime();
+            const diff = targetDate - now;
+            if (diff > 0) {
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                document.getElementById('countdown').innerText = `${days}d ${hours}u tot de aftrap!`;
+            } else {
+                document.getElementById('countdown').innerText = "Het EK 2028 is begonnen!";
+            }
+        }, 1000);
+
+        // Initial Load
+        renderMatches();
+        loadLeaderboard();
+    </script>
+</body>
+</html>
